@@ -1,0 +1,84 @@
+body {
+    font-size: 24px;
+    color: #f2f5f5;
+    margin: 0;
+    padding: 0;
+    
+}
+
+.header {
+    background-color: #26252b;
+    top: 0;
+    width: 100%;
+    display: flex;
+    padding: 10px 0px;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    min-height: 50px;
+}
+
+h1 {
+    position: absolute;
+    left: 0;
+    padding: 10px;
+    text-transform: uppercase;
+    font-weight: bold;
+    color: #b1e8e8;
+}
+
+
+.town_choose {
+    margin-right: 10px;
+}
+
+.main {
+    min-height: 300px;
+    background-color: #919194;
+    margin: 0px 200px;
+    overflow: auto;
+}
+
+.weather {
+    height: 100%;
+}
+
+.weather_current {
+    display: flex;
+    width: 50%;
+    border-radius: 30px;
+    background-color: #79c5c3;
+    margin: 10px;
+    min-height: 300px;
+    position: relative;
+    z-index: 0;
+    justify-content: center;
+}
+
+.weather_current::before {
+    content: "";
+    background-image: url('images/background-weather/sunny-sky_87394-20.jpg');
+    background-size: cover;
+    background-repeat: no-repeat;
+    opacity: 0.55;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    position: absolute;
+    z-index: -1;
+    border-radius: 30px;
+}
+
+.weather_current-header {
+    padding-top: 10px;
+    width: 100%;
+    margin: 0 auto;
+
+}
+
+.weather_current-title, .weather_current-town {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather-report</title>
+    <link rel="stylesheet" href="reset.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="header">
+        <h1>Weather-report</h1>
+        <form id="townForm">
+            <label class="town_choose" for="city">Выберите город:</label>
+            <select class="town_select" id="city" name="city">
+                <option class="town_options" value="Москва">Москва</option>
+                <option class="town_options" value="Санкт-Петербург">Санкт-Петербург</option>
+                <option class="town_options" value="Новосибирск">Новосибирск</option>
+                <option class="town_options" value="Екатеринбург">Екатеринбург</option>
+                <option class="town_options" value="Нижний Новгород">Нижний Новгород</option>
+            </select>
+    </header>
+    <main class="main">
+        <div class="weather">
+            <section class="weather_current">
+                <div class="weather_current-header">
+                    <h2 class="weather_current-title">Текущее место</h2>
+                    <div class="weather_current-town">Москва</div>
+                </div>
+            </section>
+            <section class="weather-week">
+
+            </section>
+        </div>
+    </main>
+    <script type="text/javascript" src="app.js"></script>
+</body>
+</html>
