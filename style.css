@@ -60,10 +60,10 @@ h1 {
 
 .weather_current::before {
     content: "";
-    background-image: url('images/background-weather/sunny-sky_87394-20.jpg');
+    background-image: url('images/background-weather/night-sky.jpg');
     background-size: cover;
     background-repeat: no-repeat;
-    opacity: 0.55;
+    opacity: 0.75;
     top: 0;
     left: 0;
     bottom: 0;
@@ -102,21 +102,44 @@ h1 {
 
 .weather_minmax {
     display: flex;
+    margin-top: 10px;
 }
 
 .weather_current-container{
     font-weight: bold;
     font-size: 22px;
     width: 100%;
-    margin-top: 10px;
     height: 100%;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    position: relative;
+}
+
+.weather_current-time {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    width: 100%;
+    top: 0;
+    margin: 0 auto;
+}
+
+.time-now {
+    margin-left: 5px;
 }
 
 .weather_current-items {
     display: flex;
-    width: 100%;
+    width: 95%;
     flex-direction: row;
     justify-content: space-around;
+    background-color: rgba(101, 145, 211, 0.5)
+    ;
+    margin: 0 auto;
+    border-radius: 12px;
+    
 }
 
 .weather_current-item {
@@ -148,10 +171,10 @@ h1 {
 
 .weather_week::before {
     content: "";
-    background-image: url('images/background-weather/sunny-sky_87394-20.jpg');
+    background-image: url('images/background-weather/day-sky.jpg');
     background-size: cover;
     background-repeat: no-repeat;
-    opacity: 0.5;
+    opacity: 0.6;
     top: 0;
     left: 0;
     bottom: 0;
@@ -161,7 +184,7 @@ h1 {
     border-radius: 30px;
 }
 
-/* .weather_week::after {
+ .weather_week::after {
     content: "";
     background-color: rgba(0, 0, 0, 0.5); 
     top: 0;
@@ -170,8 +193,9 @@ h1 {
     right: 0;
     position: absolute;
     z-index: -1; 
-    border-radius: 30px; */
-/* } */
+    border-radius: 30px;
+    display: none;
+ }
 
 .weather_week-header {
     width: 100%;
@@ -208,7 +232,9 @@ h1 {
 .degree {
     margin-left: 5px;
     color: rgba(242, 245, 245, 0.63);
-    width: 40px;
+    width: 50px;
+    display: flex;
+    justify-content: flex-end;
 }
 
 .icon {
@@ -223,7 +249,10 @@ h1 {
 }
 
 .degree-day {
-    margin-left: 15px;
+    margin-left: 25px;
+    width: 40px;
+    display: flex;
+    justify-content: flex-end;
 }
 
 .temperature-bar-container {
@@ -233,7 +262,7 @@ h1 {
     overflow: hidden;
     position: relative;
     height: 5px;
-    margin-left: 20px;
+    margin-left: 10px;
 }
 
 .temperature-bar {
