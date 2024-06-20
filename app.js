@@ -3,6 +3,9 @@ var currentTown = document.querySelector('.weather_current-town');
 
 townSelect.addEventListener('change', function () {
     currentTown.innerText = townSelect.value;
+
+    getData();
+    getMoscow();
 });
 
 function updateTemperatureBar(temp, barElement) {
@@ -52,7 +55,7 @@ function updateFromWeatherList() {
 }
 
 // Начальный вызов для обновления полосок
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     updateFromWeatherList();
 });
 
@@ -83,3 +86,37 @@ document.getElementById("sunsetTime").textContent = sunsetTime;
 
 // Update progress bar width based on current time
 document.getElementById("daylightProgress").style.width = `${currentProgress}%`;
+
+
+
+function getData() {
+    fetch("https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/almaty?unitGroup=metric&include=days%2Chours%2Calerts%2Ccurrent&key=PTXGDJARNVEHXS666PDAX3G6L&contentType=json", {
+        "method": "GET",
+        "headers": {
+        }
+        })
+      .then(response => {
+        console.log(response);
+      })
+      .catch(err => {
+        console.error(err);
+      });      
+      
+      
+}
+
+function getMoscow() {
+    fetch("https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/moscow?unitGroup=metric&include=days%2Chours%2Calerts%2Ccurrent&key=PTXGDJARNVEHXS666PDAX3G6L&contentType=json", {
+        "method": "GET",
+        "headers": {
+        }
+        })
+      .then(response => {
+        const data = response.json();
+        console.log(data);
+      })
+      .catch(err => {
+        console.error(err);
+      });
+      
+}
