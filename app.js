@@ -90,33 +90,39 @@ document.getElementById("daylightProgress").style.width = `${currentProgress}%`;
 
 
 function getData() {
-    fetch("https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/almaty?unitGroup=metric&include=days%2Chours%2Calerts%2Ccurrent&key=PTXGDJARNVEHXS666PDAX3G6L&contentType=json", {
-        "method": "GET",
-        "headers": {
-        }
+    fetch("https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/moscow/2024-06-22/2024-06-30?unitGroup=metric&include=hours&key=PTXGDJARNVEHXS666PDAX3G6L&contentType=json")
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok ' + response.statusText);
+            }
+            return response.json(); // Преобразование тела ответа в JSON
         })
-      .then(response => {
-        console.log(response);
-      })
-      .catch(err => {
-        console.error(err);
-      });      
-      
-      
+        .then(data => {
+            // Теперь 'data' содержит данные о погоде
+            console.log(data); // Ваши данные о погоде
+        })
+        .catch(err => {
+            console.error('Fetch error: ', err);
+        });
+        const weatherHours = data.days;
+            console.log(weatherHours);
+            console.log(data.hours);
+            console.log(data.currentConditions);
 }
 
-function getMoscow() {
-    fetch("https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/moscow?unitGroup=metric&include=days%2Chours%2Calerts%2Ccurrent&key=PTXGDJARNVEHXS666PDAX3G6L&contentType=json", {
-        "method": "GET",
-        "headers": {
-        }
-        })
-      .then(response => {
-        const data = response.json();
-        console.log(data);
-      })
-      .catch(err => {
-        console.error(err);
-      });
+
+// function getMoscow() {
+//     fetch("https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/moscow?unitGroup=metric&include=days%2Chours%2Calerts%2Ccurrent&key=PTXGDJARNVEHXS666PDAX3G6L&contentType=json", {
+//         "method": "GET",
+//         "headers": {
+//         }
+//         })
+//       .then(response => {
+//         const data = response.json();
+//         console.log(data);
+//       })
+//       .catch(err => {
+//         console.error(err);
+//       });
       
-}
+// }
