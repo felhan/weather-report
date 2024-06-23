@@ -3,43 +3,38 @@ var currentTown = document.querySelector('.weather_current-town');
 
 townSelect.addEventListener('change', function () {
     currentTown.innerText = townSelect.value;
-
     getData();
-    getMoscow();
 });
 
 function updateTemperatureBar(temp, barElement) {
-    // Calculate the width of the bar as a percentage
     let barWidth;
-    if (temp >= 0) {
-        barWidth = (temp / 40) * 100; // предполагаем, что диапазон от 0°C до 40°C для положительных температур
-    } else {
-        barWidth = ((temp + 20) / 60) * 100; // предполагаем, что диапазон от -20°C до 0°C для отрицательных температур
-    }
-
-    if (barWidth > 100) barWidth = 100; // ограничиваем ширину до 100%
-    if (barWidth < 0) barWidth = 0; // ограничиваем ширину до 0%
-
-    // Обновляем ширину полоски
-    barElement.style.width = `${barWidth}%`;
-
-    // Обновляем цвет полоски в зависимости от температуры
     let barColor;
-    if (temp <= 0) {
-        // Градиент от светло-синего до синего для холодных температур от -20°C до 0°C
-        let blueIntensity = Math.max(0, Math.min(255, 255 + (temp * 6))); // интерполируем от светло-синего к синему
-        let whiteIntensity = Math.max(200, Math.min(255, 255 + (temp * 2.75))); // светло-синий к синему
+
+    if (temp <= -20) {
+        // Полностью синяя полоска (#2084bb) при температуре -20°C и ниже
+        barWidth = 100;
+        barColor = '#2084bb';
+    } else if (temp < 0) {
+        // Градиент от светло-синего (#b8e0f9) до синего (#2084bb) для температур от -1°C до -20°C
+        barWidth = ((temp + 1) / 19) * 100;
+        let blueIntensity = Math.max(184, Math.min(255, 184 + (temp * 3))); // интерполируем от светло-синего к синему
+        let whiteIntensity = Math.max(184, Math.min(255, 224 + (temp * 4.25))); // светло-синий к синему
         barColor = `rgb(${whiteIntensity}, ${whiteIntensity}, ${blueIntensity})`;
     } else {
-        // Градиент от желтого до оранжевого для теплых температур от 0°C до 40°C
-        let redIntensity = 255; // постоянный максимальный красный
-        let greenIntensity = Math.max(150, Math.min(255, 255 - (temp * 3))); // уменьшаем зеленый для получения оранжевого
-        let blueIntensity = 0; // нет синего
-        barColor = `rgb(${redIntensity}, ${greenIntensity}, ${blueIntensity})`;
+        // Для положительных температур от 0°C до 40°C, полоска будет полностью прозрачной
+        barWidth = 0;
+        barColor = 'transparent';
     }
 
+    // Ограничиваем ширину полоски от 0% до 100%
+    barWidth = Math.max(0, Math.min(100, barWidth));
+
+    // Обновляем ширину и цвет полоски
+    barElement.style.width = `${barWidth}%`;
     barElement.style.backgroundColor = barColor;
-}
+};
+
+
 
 // Функция для извлечения температур из списка и обновления полоски
 function updateFromWeatherList() {
@@ -58,6 +53,11 @@ function updateFromWeatherList() {
 document.addEventListener('DOMContentLoaded', function () {
     updateFromWeatherList();
 });
+
+updateClock();
+setInterval(updateClock, 30000);
+getDate();
+updateDate();
 
 // Sunrise and sunset logic
 const sunriseTime = "05:30";
@@ -89,8 +89,13 @@ document.getElementById("daylightProgress").style.width = `${currentProgress}%`;
 
 
 
-function getData() {
-    fetch("https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/moscow/2024-06-22/2024-06-30?unitGroup=metric&include=hours&key=PTXGDJARNVEHXS666PDAX3G6L&contentType=json")
+function getData(city, startDate, endDate) {
+    const apiKey = "PTXGDJARNVEHXS666PDAX3G6L";
+    const baseUrl = "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/";
+
+    const url = `${baseUrl}${city}/${startDate}/${endDate}?unitGroup=metric&include=hours&key=${apiKey}&contentType=json`;
+
+    fetch(url)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok ' + response.statusText);
@@ -100,29 +105,47 @@ function getData() {
         .then(data => {
             // Теперь 'data' содержит данные о погоде
             console.log(data); // Ваши данные о погоде
+
+            const weatherHours = data.days;
+            console.log(weatherHours);
+            console.log(data.hours);
+            console.log(data.currentConditions);
         })
         .catch(err => {
             console.error('Fetch error: ', err);
         });
-        const weatherHours = data.days;
-            console.log(weatherHours);
-            console.log(data.hours);
-            console.log(data.currentConditions);
 }
 
+function getDate() {
+    let city = document.querySelector('#city');
+    
+    const startDate = updateClock();
+    const startDateString = `${startDate.year}-${startDate.month}-${startDate.day}`;
+    
+    const startDateObj = new Date(`${startDate.year}-${startDate.month}-${startDate.day}`);
+    const endDateObj = new Date(startDateObj);
+    endDateObj.setDate(startDateObj.getDate() + 7);
+    
+    const endDateString = `${endDateObj.getFullYear()}-${(endDateObj.getMonth() + 1).toString().padStart(2, '0')}-${endDateObj.getDate().toString().padStart(2, '0')}`;
+    
+    getData(city, startDateString, endDateString);
+}
 
-// function getMoscow() {
-//     fetch("https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/moscow?unitGroup=metric&include=days%2Chours%2Calerts%2Ccurrent&key=PTXGDJARNVEHXS666PDAX3G6L&contentType=json", {
-//         "method": "GET",
-//         "headers": {
-//         }
-//         })
-//       .then(response => {
-//         const data = response.json();
-//         console.log(data);
-//       })
-//       .catch(err => {
-//         console.error(err);
-//       });
-      
-// }
+function updateDate() {
+    const currentDate = new Date();
+
+    const hours = currentDate.getHours().toString().padStart(2, '0');
+    const minutes = currentDate.getMinutes().toString().padStart(2, '0');
+
+    const currentTimeString = `${hours}:${minutes}`;
+
+    document.querySelector('.time-now').textContent = currentTimeString;
+
+    const year = currentDate.getFullYear().toString();
+    const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+    const day = currentDate.getDate().toString().padStart(2, '0');
+
+    return { year, month, day };
+};
+
+
