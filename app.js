@@ -1,5 +1,7 @@
 const townSelect = document.getElementById('city');
-var currentTown = document.querySelector('.weather_current-town');
+const currentTown = document.querySelector('.weather_current-town');
+const tempMin = document.querySelector('.degree-min');
+const tempMax = document.querySelector('.degree-max');
 
 townSelect.addEventListener('change', function (evt) {
     evt.preventDefault();
@@ -85,6 +87,7 @@ function getData(city, startDate, endDate) {
             console.log(data);
             if (data.timezone) {
                 updateTimeWithTimezone(data.timezone);
+                extractWeatherData(data)
             } else {
                 console.error('Timezone not found in the API response');
             }
@@ -144,6 +147,57 @@ function sendData() {
 
     getData(englishCityName, startDateString, endDateString);
 };
+
+
+function extractWeatherData(data) {
+    const currentTime = data.days[0].hours[0].datetime;
+    const minTemp = data.days[0].tempmin;
+    const maxTemp = data.days[0].tempmax;
+    const hourlyTemps = data.days[0].hours;
+
+    tempMin.innerText = `${Math.floor(minTemp)}°C`;
+    tempMax.innerText = `${Math.floor(maxTemp)}°C`;
+
+    console.log(hourlyTemps); // Проверьте, что hourlyTemps содержит правильные данные
+    const currentHour = new Date().getHours();
+    const nextHours = 9; // Количество следующих часов
+
+    function checkHour(data) {
+        const currentHour = new Date().getHours();
+        const nextHours = 9; // Количество следующих часов
+    
+        const nextHourlyTemps = data.days[0].hours.slice(currentHour + 1, currentHour + 1 + nextHours);
+    
+        if (nextHourlyTemps.length < 9) {
+            const additionalHours = 9 - nextHourlyTemps.length;
+            const additionalTemps = data.days[1].hours.slice(0, additionalHours);
+            nextHourlyTemps.push(...additionalTemps);
+        }
+        hourReport(nextHourlyTemps);
+        
+    }
+    checkHour(data);
+}
+
+const hourTime = Array.from(document.querySelectorAll('.time'));
+const hourTemp = Array.from(document.querySelectorAll('.temperature'));
+
+function hourReport(hourlyTemps) {
+    for (let i = 0; i < hourTime.length; i++) {
+        // Добавляем любую дату, чтобы создать объект Date
+        const timeString = hourlyTemps[i].datetime;
+        const dateString = `1970-01-01T${timeString}Z`; // Используем произвольную дату и добавляем 'Z' для указания времени по UTC
+
+        const date = new Date(dateString);
+        
+        hourTime[i].innerText = date.toLocaleTimeString('ru-RU', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        hourTemp[i].innerText = `${Math.floor(hourlyTemps[i].temp)}°C`;
+    }
+};
+
 
 
 
