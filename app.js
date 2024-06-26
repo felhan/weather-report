@@ -1,8 +1,10 @@
 const townSelect = document.getElementById('city');
 var currentTown = document.querySelector('.weather_current-town');
 
-townSelect.addEventListener('change', function () {
+townSelect.addEventListener('change', function (evt) {
+    evt.preventDefault();
     currentTown.innerText = townSelect.value;
+    sendData();
 });
 
 function updateTemperatureBar(temp, barElement) {
@@ -36,7 +38,7 @@ function updateTemperatureBar(temp, barElement) {
         barColor = `rgb(${red}, ${green}, ${blue})`;
     }
     barElement.style.backgroundColor = barColor;
-}
+};
 
 
 
@@ -55,42 +57,14 @@ function updateFromWeatherList() {
 
 // Начальный вызов для обновления полосок
 document.addEventListener('DOMContentLoaded', function () {
+    currentTown.innerText = townSelect.value;
     updateFromWeatherList();
-    test();
-
+    sendData();
 });
-test();
+
 
 // updateClock();
 // setInterval(updateClock, 30000);
-
-// Sunrise and sunset logic
-const sunriseTime = "05:30";
-const sunsetTime = "20:00";
-
-// Convert time strings to minutes since midnight for easier calculation
-function timeToMinutes(timeString) {
-    const [hours, minutes] = timeString.split(":").map(Number);
-    return hours * 60 + minutes;
-}
-
-const sunriseMinutes = timeToMinutes(sunriseTime);
-const sunsetMinutes = timeToMinutes(sunsetTime);
-
-// Get current time in minutes since midnight
-const now = new Date();
-const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
-// Calculate daylight length and progress
-const daylightLength = sunsetMinutes - sunriseMinutes;
-const currentProgress = ((currentMinutes - sunriseMinutes) / daylightLength) * 100;
-
-// Update DOM with sunrise and sunset times
-document.getElementById("sunriseTime").textContent = sunriseTime;
-document.getElementById("sunsetTime").textContent = sunsetTime;
-
-// Update progress bar width based on current time
-document.getElementById("daylightProgress").style.width = `${currentProgress}%`;
 
 
 
@@ -108,56 +82,71 @@ function getData(city, startDate, endDate) {
             return response.json(); // Преобразование тела ответа в JSON
         })
         .then(data => {
-            // Теперь 'data' содержит данные о погоде
-            console.log(data); // Ваши данные о погоде
-
-            const weatherHours = data.days;
-            console.log(weatherHours);
-            console.log(data.hours);
-            console.log(data.currentConditions);
+            console.log(data);
+            if (data.timezone) {
+                updateTimeWithTimezone(data.timezone);
+            } else {
+                console.error('Timezone not found in the API response');
+            }
         })
         .catch(err => {
             console.error('Fetch error: ', err);
         });
-}
+};
 
+let clockInterval;
 
-function sendData(startDate, endDate){
-    const russianCityName = currentTown.innerText;
-    const englishCityName = cityTranslations[russianCityName];
- 
-    getData(englishCityName, startDateString, endDateString);
+function updateTimeWithTimezone(timezone) {
+    const options = {
+        timeZone: timezone,
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+    };
 
+    function updateClock() {
+        const currentTime = new Date().toLocaleTimeString('ru-RU', options);
+        document.querySelector('.time-now').textContent = currentTime;
+    }
+
+    // Очищаем предыдущий интервал, если он существует
+    if (clockInterval) {
+        clearInterval(clockInterval);
+    }
+
+    // Обновляем время сразу
+    updateClock();
+
+    // Устанавливаем новый интервал для обновления времени каждую секунду
+    clockInterval = setInterval(updateClock, 1000);
+};
+
+const cityTranslations = {
+    'Москва': 'moscow',
+    'Санкт-Петербург': 'saint-petersburg',
+    'Алматы': 'almaty',
+    'Нью-Йорк': 'new-york',
+    'Пхукет': 'phuket',
+    'Гомель': 'gomel'
 };
 
 
-function test () {
-    fetch("https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/ALMATY/2024-06-25/2024-07-09?unitGroup=metric&include=hours%2Cdays%2Ccurrent&key=PTXGDJARNVEHXS666PDAX3G6L&contentType=json", {
-        "method": "GET",
-        "headers": {
-        }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok ' + response.statusText);
-            }
-            return response.json(); // Преобразование тела ответа в JSON
-        })
-        .then(data => {
-            // Теперь 'data' содержит данные о погоде
-            console.log(data); // Ваши данные о погоде
+function sendData() {
+    const russianCityName = currentTown.innerText;
+    const englishCityName = cityTranslations[russianCityName];
 
-            const weatherHours = data.days;
-            console.log(weatherHours);
-            console.log(data.hours);
-            console.log(data.currentConditions);
-        })
-        .catch(err => {
-            console.error('Fetch error: ', err);
-        });
-      
-}
+    const currentDate = new Date();
+    const startDateString = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}-${currentDate.getDate().toString().padStart(2, '0')}`;
 
-test();
+    const endDateObj = new Date(currentDate);
+    endDateObj.setDate(currentDate.getDate() + 7);
+    const endDateString = `${endDateObj.getFullYear()}-${(endDateObj.getMonth() + 1).toString().padStart(2, '0')}-${endDateObj.getDate().toString().padStart(2, '0')}`;
+
+    getData(englishCityName, startDateString, endDateString);
+};
+
+
+
+
 
 
