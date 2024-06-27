@@ -3,6 +3,30 @@ const currentTown = document.querySelector('.weather_current-town');
 const tempMin = document.querySelector('.degree-min');
 const tempMax = document.querySelector('.degree-max');
 
+// Функция для сохранения данных в localStorage
+function saveDataToLocalStorage(city, data) {
+    const now = new Date().getTime();
+    const item = {
+        data: data,
+        timestamp: now
+    };
+    localStorage.setItem(city, JSON.stringify(item));
+}
+
+function getDataFromLocalStorage(city) {
+    const item = localStorage.getItem(city);
+    if (!item) return null;
+
+    const parsedItem = JSON.parse(item);
+    const now = new Date().getTime();
+    // Проверяем, не устарели ли данные (например, 1 час)
+    if (now - parsedItem.timestamp > 3600000) {
+        localStorage.removeItem(city);
+        return null;
+    }
+    return parsedItem.data;
+}
+
 townSelect.addEventListener('change', function (evt) {
     evt.preventDefault();
     currentTown.innerText = townSelect.value;
@@ -57,40 +81,34 @@ function updateFromWeatherList() {
     });
 }
 
-// Начальный вызов для обновления полосок
 document.addEventListener('DOMContentLoaded', function () {
     currentTown.innerText = townSelect.value;
     updateFromWeatherList();
     sendData();
 });
 
-
-// updateClock();
-// setInterval(updateClock, 30000);
-
-
-
 function getData(city, startDate, endDate) {
+    // Проверяем, есть ли данные в localStorage
+    const cachedData = getDataFromLocalStorage(city);
+    if (cachedData) {
+        processWeatherData(cachedData);
+        return;
+    }
+
     const apiKey = "PTXGDJARNVEHXS666PDAX3G6L";
     const baseUrl = "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/";
-
     const url = `${baseUrl}${city}/${startDate}/${endDate}?unitGroup=metric&include=hours&key=${apiKey}&contentType=json`;
 
     fetch(url)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok ' + response.statusText);
-            };
+            }
             return response.json();
         })
         .then(data => {
-            console.log(data);
-            if (data.timezone) {
-                updateTimeWithTimezone(data.timezone);
-                extractWeatherData(data)
-            } else {
-                console.error('Timezone not found in the API response');
-            }
+            saveDataToLocalStorage(city, data);
+            processWeatherData(data);
         })
         .catch(err => {
             console.error('Fetch error: ', err);
@@ -124,6 +142,21 @@ function updateTimeWithTimezone(timezone) {
     clockInterval = setInterval(updateClock, 1000);
 };
 
+function processWeatherData(data) {
+    if (data.timezone) {
+        updateTimeWithTimezone(data.timezone);
+        extractWeatherData(data);
+    } else {
+        console.error('Timezone not found in the API response');
+    }
+}
+
+townSelect.addEventListener('change', function (evt) {
+    evt.preventDefault();
+    currentTown.innerText = townSelect.value;
+    sendData();
+});
+
 const cityTranslations = {
     'Москва': 'moscow',
     'Санкт-Петербург': 'saint-petersburg',
@@ -146,7 +179,7 @@ function sendData() {
     const endDateString = `${endDateObj.getFullYear()}-${(endDateObj.getMonth() + 1).toString().padStart(2, '0')}-${endDateObj.getDate().toString().padStart(2, '0')}`;
 
     getData(englishCityName, startDateString, endDateString);
-};
+}
 
 
 function extractWeatherData(data) {
@@ -178,56 +211,15 @@ function hourReport(hourlyTemps) {
 };
 
 
-function getWeatherIcon(conditions, dateTimeEpoch) {
-    const lowercaseConditions = conditions.toLowerCase();
-    const date = new Date(dateTimeEpoch * 1000);
-    const hour = date.getHours();
-    const isNight = hour >= 20 || hour < 6;
-
-    const iconMap = {
-        'clear': isNight ? 'clear-night' : 'clear-day',
-        'cloudy': isNight ? 'partly-cloudy-night': 'cloudy',
-        'fog': isNight ? 'fog-night' : 'fog',
-        'overcast': isNight ? 'overcast-night' : 'overcast-day',
-        'partially cloudy': isNight ? 'partly-cloudy-night' : 'partly-cloudy-day',
-        'rain': 'rain',
-        'sleet': 'sleet',
-        'snow': 'snow',
-        'thunderstorm': isNight ? 'thunderstorms-night' : 'thunderstorms-day',
-        'wind': 'wind'
-    };
-
-    // Специальные случаи
-    if (lowercaseConditions.includes('partly cloudy') && lowercaseConditions.includes('rain')) {
-        return `images/weather-icons/partly-cloudy-${isNight ? 'night' : 'day'}-rain.svg`;
-    }
-    if (lowercaseConditions.includes('partly cloudy') && lowercaseConditions.includes('drizzle')) {
-        return 'images/weather-icons/partly-cloudy-night-drizzle.svg';
-    }
-    if (lowercaseConditions.includes('partly cloudy') && lowercaseConditions.includes('sleet')) {
-        return 'images/weather-icons/partly-cloudy-night-sleet.svg';
-    }
-    if (lowercaseConditions.includes('partly cloudy') && lowercaseConditions.includes('snow')) {
-        return 'images/weather-icons/partly-cloudy-night-snow.svg';
-    }
-    if (lowercaseConditions.includes('thunderstorm') && lowercaseConditions.includes('rain')) {
-        return `images/weather-icons/thunderstorms-${isNight ? 'night' : 'day'}-rain.svg`;
-    }
-
-    for (const [condition, iconName] of Object.entries(iconMap)) {
-        if (lowercaseConditions.includes(condition)) {
-            return `images/weather-icons/${iconName}.svg`;
-        }
-    }
-
-    // Если не найдено соответствие, возвращаем иконку по умолчанию
-    return 'images/weather-icons/clear-day.svg';
+function getWeatherIcon(icon) {
+    // Предполагаем, что названия иконок в API совпадают с вашими файлами
+    return `images/weather-icons/${icon}.svg`;
 }
 
 function updateWeatherDisplay(data) {
     const currentConditions = data.days[0].conditions;
-    const currentDateTimeEpoch = data.days[0].datetimeEpoch;
-    const iconPath = getWeatherIcon(currentConditions, currentDateTimeEpoch);
+    const currentIcon = data.days[0].icon;
+    const iconPath = getWeatherIcon(currentIcon);
 
     const weatherIconElement = document.querySelector('.day-icon');
     weatherIconElement.src = iconPath;
@@ -237,12 +229,22 @@ function updateWeatherDisplay(data) {
     const translatedCondition = translateWeatherCondition(currentConditions);
     weatherDescriptionElement.textContent = translatedCondition;
 
-    const currentHour = new Date().getHours();
+    // Получаем текущее время в часовом поясе выбранного города
+    const options = {
+        timeZone: data.timezone,
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+    };
+    const cityTime = new Date().toLocaleString('ru-RU', options);
+    const currentHour = parseInt(cityTime.split(':')[0]);
+
     const weatherItems = document.querySelectorAll('.weather_current-item');
 
     weatherItems.forEach((item, index) => {
-        const hourData = data.days[0].hours[(currentHour + index + 1) % 24];
-        const iconPath = getWeatherIcon(hourData.conditions, hourData.datetimeEpoch);
+        const hourIndex = (currentHour + index + 1) % 24;
+        const hourData = data.days[0].hours[hourIndex];
+        const iconPath = getWeatherIcon(hourData.icon);
 
         const timeElement = item.querySelector('.time');
         const iconElement = item.querySelector('.day-icon');
