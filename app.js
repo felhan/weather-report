@@ -80,8 +80,8 @@ function getData(city, startDate, endDate) {
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok ' + response.statusText);
-            }
-            return response.json(); // Преобразование тела ответа в JSON
+            };
+            return response.json();
         })
         .then(data => {
             console.log(data);
@@ -150,54 +150,135 @@ function sendData() {
 
 
 function extractWeatherData(data) {
-    const currentTime = data.days[0].hours[0].datetime;
     const minTemp = data.days[0].tempmin;
     const maxTemp = data.days[0].tempmax;
-    const hourlyTemps = data.days[0].hours;
+    const tempNow = data.days[0].temp;
 
     tempMin.innerText = `${Math.floor(minTemp)}°C`;
     tempMax.innerText = `${Math.floor(maxTemp)}°C`;
+    temperatureCurrent.innerText = `${Math.floor(tempNow)}°C`;
 
-    console.log(hourlyTemps); // Проверьте, что hourlyTemps содержит правильные данные
-    const currentHour = new Date().getHours();
-    const nextHours = 9; // Количество следующих часов
+    updateWeatherDisplay(data);
 
-    function checkHour(data) {
-        const currentHour = new Date().getHours();
-        const nextHours = 9; // Количество следующих часов
-    
-        const nextHourlyTemps = data.days[0].hours.slice(currentHour + 1, currentHour + 1 + nextHours);
-    
-        if (nextHourlyTemps.length < 9) {
-            const additionalHours = 9 - nextHourlyTemps.length;
-            const additionalTemps = data.days[1].hours.slice(0, additionalHours);
-            nextHourlyTemps.push(...additionalTemps);
-        }
-        hourReport(nextHourlyTemps);
-        
-    }
-    checkHour(data);
+    // Обновляем основное описание погоды
+    const mainWeatherDescription = document.querySelector('.weather_current-sunniest');
+    const translatedMainCondition = translateWeatherCondition(data.days[0].conditions);
+    mainWeatherDescription.textContent = translatedMainCondition;
 }
 
 const hourTime = Array.from(document.querySelectorAll('.time'));
 const hourTemp = Array.from(document.querySelectorAll('.temperature'));
+const temperatureCurrent = document.querySelector('.weather_current-tmp');
 
 function hourReport(hourlyTemps) {
     for (let i = 0; i < hourTime.length; i++) {
-        // Добавляем любую дату, чтобы создать объект Date
-        const timeString = hourlyTemps[i].datetime;
-        const dateString = `1970-01-01T${timeString}Z`; // Используем произвольную дату и добавляем 'Z' для указания времени по UTC
-
-        const date = new Date(dateString);
-        
-        hourTime[i].innerText = date.toLocaleTimeString('ru-RU', {
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        hourTime[i].innerText = hourlyTemps[i].datetime.slice(0, 2);
         hourTemp[i].innerText = `${Math.floor(hourlyTemps[i].temp)}°C`;
     }
 };
 
+
+function getWeatherIcon(conditions, dateTimeEpoch) {
+    const lowercaseConditions = conditions.toLowerCase();
+    const date = new Date(dateTimeEpoch * 1000);
+    const hour = date.getHours();
+    const isNight = hour >= 20 || hour < 6;
+
+    const iconMap = {
+        'clear': isNight ? 'clear-night' : 'clear-day',
+        'cloudy': isNight ? 'partly-cloudy-night': 'cloudy',
+        'fog': isNight ? 'fog-night' : 'fog',
+        'overcast': isNight ? 'overcast-night' : 'overcast-day',
+        'partially cloudy': isNight ? 'partly-cloudy-night' : 'partly-cloudy-day',
+        'rain': 'rain',
+        'sleet': 'sleet',
+        'snow': 'snow',
+        'thunderstorm': isNight ? 'thunderstorms-night' : 'thunderstorms-day',
+        'wind': 'wind'
+    };
+
+    // Специальные случаи
+    if (lowercaseConditions.includes('partly cloudy') && lowercaseConditions.includes('rain')) {
+        return `images/weather-icons/partly-cloudy-${isNight ? 'night' : 'day'}-rain.svg`;
+    }
+    if (lowercaseConditions.includes('partly cloudy') && lowercaseConditions.includes('drizzle')) {
+        return 'images/weather-icons/partly-cloudy-night-drizzle.svg';
+    }
+    if (lowercaseConditions.includes('partly cloudy') && lowercaseConditions.includes('sleet')) {
+        return 'images/weather-icons/partly-cloudy-night-sleet.svg';
+    }
+    if (lowercaseConditions.includes('partly cloudy') && lowercaseConditions.includes('snow')) {
+        return 'images/weather-icons/partly-cloudy-night-snow.svg';
+    }
+    if (lowercaseConditions.includes('thunderstorm') && lowercaseConditions.includes('rain')) {
+        return `images/weather-icons/thunderstorms-${isNight ? 'night' : 'day'}-rain.svg`;
+    }
+
+    for (const [condition, iconName] of Object.entries(iconMap)) {
+        if (lowercaseConditions.includes(condition)) {
+            return `images/weather-icons/${iconName}.svg`;
+        }
+    }
+
+    // Если не найдено соответствие, возвращаем иконку по умолчанию
+    return 'images/weather-icons/clear-day.svg';
+}
+
+function updateWeatherDisplay(data) {
+    const currentConditions = data.days[0].conditions;
+    const currentDateTimeEpoch = data.days[0].datetimeEpoch;
+    const iconPath = getWeatherIcon(currentConditions, currentDateTimeEpoch);
+
+    const weatherIconElement = document.querySelector('.day-icon');
+    weatherIconElement.src = iconPath;
+
+    // Обновляем текстовое описание погоды
+    const weatherDescriptionElement = document.querySelector('.weather_current-sunniest');
+    const translatedCondition = translateWeatherCondition(currentConditions);
+    weatherDescriptionElement.textContent = translatedCondition;
+
+    const currentHour = new Date().getHours();
+    const weatherItems = document.querySelectorAll('.weather_current-item');
+
+    weatherItems.forEach((item, index) => {
+        const hourData = data.days[0].hours[(currentHour + index + 1) % 24];
+        const iconPath = getWeatherIcon(hourData.conditions, hourData.datetimeEpoch);
+
+        const timeElement = item.querySelector('.time');
+        const iconElement = item.querySelector('.day-icon');
+        const tempElement = item.querySelector('.temperature');
+
+        timeElement.textContent = hourData.datetime.slice(0, 2);
+        iconElement.src = iconPath;
+        tempElement.textContent = `${Math.floor(hourData.temp)}°C`;
+    });
+}
+
+function translateWeatherCondition(condition) {
+    const conditionMap = {
+        'clear': 'Ясно',
+        'partly cloudy': 'Переменная облачность',
+        'cloudy': 'Облачно',
+        'overcast': 'Пасмурно',
+        'rain': 'Дождь',
+        'snow': 'Снег',
+        'sleet': 'Мокрый снег',
+        'thunderstorm': 'Гроза',
+        'fog': 'Туман',
+        'wind': 'Ветрено'
+    };
+
+    const lowercaseCondition = condition.toLowerCase();
+
+    for (const [engCondition, rusCondition] of Object.entries(conditionMap)) {
+        if (lowercaseCondition.includes(engCondition)) {
+            return rusCondition;
+        }
+    }
+
+    // Если перевод не найден, возвращаем оригинальное значение
+    return condition;
+}
 
 
 
