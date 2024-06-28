@@ -2,13 +2,28 @@ const townSelect = document.getElementById('city');
 const currentTown = document.querySelector('.weather_current-town');
 const tempMin = document.querySelector('.degree-min');
 const tempMax = document.querySelector('.degree-max');
+const temperatureCurrent = document.querySelector('.weather_current-tmp');
+const sunsetPoint = document.querySelector('#sunset');
+const sunrisePoint = document.querySelector('#sunrise');
+const sundayPoint = document.querySelector('#sunday');
 
-// Функция для сохранения данных в localStorage
+const cityTranslations = {
+    'Москва': 'moscow',
+    'Санкт-Петербург': 'saint-petersburg',
+    'Алматы': 'almaty',
+    'Нью-Йорк': 'new-york',
+    'Пхукет': 'phuket',
+    'Гомель': 'gomel',
+    'Минск': 'minsk'
+};
+
 function saveDataToLocalStorage(city, data) {
     const now = new Date().getTime();
     const item = {
         data: data,
-        timestamp: now
+        timestamp: now,
+        sunlightData: calculateSunlightData(city, data),
+        backgroundData: calculateBackgroundData(data)
     };
     localStorage.setItem(city, JSON.stringify(item));
 }
@@ -19,79 +34,44 @@ function getDataFromLocalStorage(city) {
 
     const parsedItem = JSON.parse(item);
     const now = new Date().getTime();
-    // Проверяем, не устарели ли данные (например, 1 час)
     if (now - parsedItem.timestamp > 3600000) {
         localStorage.removeItem(city);
         return null;
     }
-    return parsedItem.data;
+    return parsedItem;
 }
-
-townSelect.addEventListener('change', function (evt) {
-    evt.preventDefault();
-    currentTown.innerText = townSelect.value;
-    sendData();
-});
 
 function updateTemperatureBar(temp, barElement) {
     let barWidth;
     if (temp >= 0) {
-        // Диапазон от 0°C до 40°C для положительных температур
         barWidth = (temp / 40) * 100;
     } else {
-        // Диапазон от 0°C до -25°C для отрицательных температур
         barWidth = (Math.abs(temp) / 25) * 100;
     }
-    // Ограничиваем ширину полоски от 0% до 100%
     barWidth = Math.min(100, Math.max(0, barWidth));
 
-    // Обновляем ширину полоски
     barElement.style.width = `${barWidth}%`;
 
-    // Обновляем цвет полоски в зависимости от температуры
     let barColor;
     if (temp >= 0) {
-        // Градиент от желтого до оранжевого для температур от 0°C до 40°C
         let redIntensity = 255;
         let greenIntensity = Math.max(150, Math.min(255, 255 - (temp * 3)));
         let blueIntensity = 0;
         barColor = `rgb(${redIntensity}, ${greenIntensity}, ${blueIntensity})`;
     } else {
-        // Градиент от темно-голубого до темно-синего для температур от 0°C до -25°C
         let blue = 255;
         let red = Math.max(0, 100 - Math.abs(temp) * 4);
         let green = Math.max(0, 150 - Math.abs(temp) * 6);
         barColor = `rgb(${red}, ${green}, ${blue})`;
     }
     barElement.style.backgroundColor = barColor;
-};
-
-
-
-// Функция для извлечения температур из списка и обновления полоски
-function updateFromWeatherList() {
-    const weatherItems = document.querySelectorAll('.weather_week-item'); // исправленный селектор
-
-    weatherItems.forEach(function (item) {
-        const tempText = item.querySelector('.degree-day').textContent.trim(); // получаем текст температуры и удаляем пробелы
-        const tempValue = parseInt(tempText, 10); // извлекаем числовое значение из "-25°C"
-        const barElement = item.querySelector('.temperature-bar');
-
-        updateTemperatureBar(tempValue, barElement);
-    });
 }
 
-document.addEventListener('DOMContentLoaded', function () {
-    currentTown.innerText = townSelect.value;
-    updateFromWeatherList();
-    sendData();
-});
-
 function getData(city, startDate, endDate) {
-    // Проверяем, есть ли данные в localStorage
     const cachedData = getDataFromLocalStorage(city);
     if (cachedData) {
-        processWeatherData(cachedData);
+        processWeatherData(cachedData.data);
+        updateBackground(cachedData.backgroundData);
         return;
     }
 
@@ -102,18 +82,20 @@ function getData(city, startDate, endDate) {
     fetch(url)
         .then(response => {
             if (!response.ok) {
-                throw new Error('Network response was not ok ' + response.statusText);
+                throw new Error('Ошибка сети: ' + response.statusText);
             }
             return response.json();
         })
         .then(data => {
+            const backgroundData = calculateBackgroundData(data);
             saveDataToLocalStorage(city, data);
             processWeatherData(data);
+            updateBackground(backgroundData);
         })
         .catch(err => {
-            console.error('Fetch error: ', err);
+            console.error('Ошибка запроса: ', err);
         });
-};
+}
 
 let clockInterval;
 
@@ -130,42 +112,24 @@ function updateTimeWithTimezone(timezone) {
         document.querySelector('.time-now').textContent = currentTime;
     }
 
-    // Очищаем предыдущий интервал, если он существует
     if (clockInterval) {
         clearInterval(clockInterval);
     }
 
-    // Обновляем время сразу
     updateClock();
-
-    // Устанавливаем новый интервал для обновления времени каждую секунду
     clockInterval = setInterval(updateClock, 1000);
-};
+}
 
 function processWeatherData(data) {
     if (data.timezone) {
         updateTimeWithTimezone(data.timezone);
         extractWeatherData(data);
+        sunsetSunrise(data);
+        updateWeeklyForecast(data);
     } else {
-        console.error('Timezone not found in the API response');
+        console.error('Часовой пояс не найден в ответе API');
     }
 }
-
-townSelect.addEventListener('change', function (evt) {
-    evt.preventDefault();
-    currentTown.innerText = townSelect.value;
-    sendData();
-});
-
-const cityTranslations = {
-    'Москва': 'moscow',
-    'Санкт-Петербург': 'saint-petersburg',
-    'Алматы': 'almaty',
-    'Нью-Йорк': 'new-york',
-    'Пхукет': 'phuket',
-    'Гомель': 'gomel'
-};
-
 
 function sendData() {
     const russianCityName = currentTown.innerText;
@@ -181,7 +145,6 @@ function sendData() {
     getData(englishCityName, startDateString, endDateString);
 }
 
-
 function extractWeatherData(data) {
     const minTemp = data.days[0].tempmin;
     const maxTemp = data.days[0].tempmax;
@@ -193,26 +156,12 @@ function extractWeatherData(data) {
 
     updateWeatherDisplay(data);
 
-    // Обновляем основное описание погоды
     const mainWeatherDescription = document.querySelector('.weather_current-sunniest');
     const translatedMainCondition = translateWeatherCondition(data.days[0].conditions);
     mainWeatherDescription.textContent = translatedMainCondition;
 }
 
-const hourTime = Array.from(document.querySelectorAll('.time'));
-const hourTemp = Array.from(document.querySelectorAll('.temperature'));
-const temperatureCurrent = document.querySelector('.weather_current-tmp');
-
-function hourReport(hourlyTemps) {
-    for (let i = 0; i < hourTime.length; i++) {
-        hourTime[i].innerText = hourlyTemps[i].datetime.slice(0, 2);
-        hourTemp[i].innerText = `${Math.floor(hourlyTemps[i].temp)}°C`;
-    }
-};
-
-
 function getWeatherIcon(icon) {
-    // Предполагаем, что названия иконок в API совпадают с вашими файлами
     return `images/weather-icons/${icon}.svg`;
 }
 
@@ -224,12 +173,10 @@ function updateWeatherDisplay(data) {
     const weatherIconElement = document.querySelector('.day-icon');
     weatherIconElement.src = iconPath;
 
-    // Обновляем текстовое описание погоды
     const weatherDescriptionElement = document.querySelector('.weather_current-sunniest');
     const translatedCondition = translateWeatherCondition(currentConditions);
     weatherDescriptionElement.textContent = translatedCondition;
 
-    // Получаем текущее время в часовом поясе выбранного города
     const options = {
         timeZone: data.timezone,
         hour: '2-digit',
@@ -278,12 +225,115 @@ function translateWeatherCondition(condition) {
         }
     }
 
-    // Если перевод не найден, возвращаем оригинальное значение
     return condition;
 }
 
+function calculateSunlightData(city, data) {
+    let sunset = data.days[0].sunset;
+    let sunrise = data.days[0].sunrise;
 
+    const sunsetTime = new Date(`2000-01-01T${sunset}`);
+    const sunriseTime = new Date(`2000-01-01T${sunrise}`);
+    
+    let diffMs = sunsetTime - sunriseTime;
+    if (diffMs < 0) {
+        diffMs += 24 * 60 * 60 * 1000;
+    }
 
+    const diffHrs = Math.floor(diffMs / 3600000);
+    const diffMins = Math.floor((diffMs % 3600000) / 60000);
 
+    return {
+        sunset: sunset,
+        sunrise: sunrise,
+        daylightDuration: `${diffHrs} ч ${diffMins} мин`
+    };
+}
 
+function sunsetSunrise(data) {
+    const city = townSelect.value;
+    const cachedData = getDataFromLocalStorage(city);
 
+    let sunlightData;
+    if (cachedData && cachedData.sunlightData) {
+        sunlightData = cachedData.sunlightData;
+    } else {
+        sunlightData = calculateSunlightData(city, data);
+    }
+
+    sunsetPoint.innerText = sunlightData.sunset.slice(0, 5);
+    sunrisePoint.innerText = sunlightData.sunrise.slice(0, 5);
+    sundayPoint.innerText = sunlightData.daylightDuration;
+}
+
+function updateWeeklyForecast(data) {
+    const weekDays = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+    const weatherItems = document.querySelectorAll('.weather_week-item');
+
+    data.days.forEach((day, index) => {
+        if (index >= weatherItems.length) return; // Прекращаем, если элементов больше, чем дней
+
+        const weatherItem = weatherItems[index];
+        if (!weatherItem) return; // Проверка на существование элемента
+
+        const date = new Date(day.datetime);
+        const dayOfWeek = index === 0 ? 'Сегодня' : weekDays[date.getDay()];
+
+        const dayElement = weatherItem.querySelector('.day');
+        const iconElement = weatherItem.querySelector('.icon');
+        const minTempElement = weatherItem.querySelector('.degree');
+        const maxTempElement = weatherItem.querySelector('.degree-day');
+        const temperatureBar = weatherItem.querySelector('.temperature-bar');
+
+        if (dayElement) dayElement.textContent = dayOfWeek;
+        if (iconElement) iconElement.src = `images/weather-icons/${day.icon}.svg`;
+        if (minTempElement) minTempElement.textContent = `${Math.round(day.tempmin)}°C`;
+        if (maxTempElement) maxTempElement.textContent = `${Math.round(day.tempmax)}°C`;
+        if (temperatureBar) updateTemperatureBar(day.tempmax, temperatureBar);
+    });
+}
+
+function calculateBackgroundData(data) {
+    const currentHour = new Date().toLocaleString('en-US', { timeZone: data.timezone, hour: 'numeric', hour12: false });
+    let backgroundImage;
+    let isNight = false;
+
+    if (currentHour >= 21 || currentHour < 4) {
+        backgroundImage = 'night-sky.jpg';
+        isNight = true;
+    } else if (currentHour >= 4 && currentHour < 7) {
+        backgroundImage = 'morning-sky.jpg';
+    } else if (currentHour >= 7 && currentHour < 18) {
+        backgroundImage = 'day-sky.jpg';
+    } else {
+        backgroundImage = 'evening-sky.jpg';
+    }
+
+    return { backgroundImage, isNight };
+}
+
+function updateBackground(backgroundData) {
+    const weatherCurrent = document.querySelector('.weather_current');
+    const weatherWeek = document.querySelector('.weather_week');
+
+    document.documentElement.style.setProperty('--background-image', `url('images/background-weather/${backgroundData.backgroundImage}')`);
+
+    if (backgroundData.isNight) {
+        weatherCurrent.classList.add('night');
+        weatherWeek.classList.add('night');
+    } else {
+        weatherCurrent.classList.remove('night');
+        weatherWeek.classList.remove('night');
+    }
+}
+
+townSelect.addEventListener('change', function (evt) {
+    evt.preventDefault();
+    currentTown.innerText = townSelect.value;
+    sendData();
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    currentTown.innerText = townSelect.value;
+    sendData();
+});

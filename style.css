@@ -58,9 +58,13 @@ h1 {
     flex-wrap: wrap;
 }
 
-.weather_current::before {
+:root {
+    --background-image: url('images/background-weather/day-sky.jpg');
+}
+
+.weather_current::before, .weather_week::before {
     content: "";
-    background-image: url('images/background-weather/night-sky.jpg');
+    background-image: var(--background-image);
     background-size: cover;
     background-repeat: no-repeat;
     opacity: 0.75;
@@ -71,6 +75,23 @@ h1 {
     position: absolute;
     z-index: -1;
     border-radius: 30px;
+}
+
+.weather_current::after, .weather_week::after {
+    content: "";
+    background-color: rgba(0, 0, 0, 0.5);
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    position: absolute;
+    z-index: -1;
+    border-radius: 30px;
+    display: none;
+}
+
+.weather_current.night::after, .weather_week.night::after {
+    display: block;
 }
 
 .weather_current-header {
@@ -168,34 +189,6 @@ h1 {
     position: relative;
     min-height: 400px;
 }
-
-.weather_week::before {
-    content: "";
-    background-image: url('images/background-weather/day-sky.jpg');
-    background-size: cover;
-    background-repeat: no-repeat;
-    opacity: 0.6;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    right: 0;
-    position: absolute;
-    z-index: -2;
-    border-radius: 30px;
-}
-
- .weather_week::after {
-    content: "";
-    background-color: rgba(0, 0, 0, 0.5); 
-    top: 0;
-    left: 0;
-    bottom: 0;
-    right: 0;
-    position: absolute;
-    z-index: -1; 
-    border-radius: 30px;
-    display: none;
- }
 
 .weather_week-header {
     width: 100%;
