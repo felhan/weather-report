@@ -3,7 +3,7 @@ body {
     color: rgba(242, 245, 245);
     margin: 0;
     padding: 0;
-
+    background-color: rgb(26, 30, 69);
 }
 
 .header {
@@ -34,7 +34,6 @@ h1 {
 
 .main {
     min-height: 300px;
-    background-color: #919194;
     margin: 0px 200px;
     overflow: auto;
 }
